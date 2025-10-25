@@ -623,14 +623,15 @@ exit /b
 :_rcont
 
 reg add %reg% %nul%
-if "%errorlevel%"=="0" (
+set "rc=%errorlevel%"
+if "%rc%"=="0" (
 set "reg=%reg:"=%"
 echo Added - !reg!
 ) else (
 set "reg=%reg:"=%"
 call :_color2 %Red% "Failed - !reg!"
 )
-exit /b
+exit /b %rc%
 
 :register_IDM
 
@@ -704,15 +705,16 @@ echo:
 set "reg="%HKLM%" /v "AdvIntDriverEnabled2""
 
 reg add %reg% /t REG_DWORD /d "1" /f %nul%
+set "rc=%errorlevel%"
 
-if "%errorlevel%"=="0" (
+if "%rc%"=="0" (
 set "reg=%reg:"=%"
 echo Added - !reg!
 ) else (
 set "reg=%reg:"=%"
 call :_color2 %Red% "Failed - !reg!"
 )
-exit /b
+exit /b %rc%
 
 ::========================================================================================================================================
 
