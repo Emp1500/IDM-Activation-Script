@@ -1,4 +1,4 @@
-@set iasver=1.2
+@set iasver=1.3
 @setlocal DisableDelayedExpansion
 @echo off
 
@@ -557,6 +557,7 @@ call :delete_queue
 call :add_key
 
 call :block_servers
+if errorlevel 1 goto done
 
 %psc% "$sid = '%_sid%'; $HKCUsync = %HKCUsync%; $lockKey = 1; $deleteKey = $null; $toggle = 1; $f=[io.file]::ReadAllText('!_batp!') -split ':regscan\:.*';iex ($f[1])"
 
@@ -622,7 +623,13 @@ exit /b
 :_rcont
 
 reg add %reg% %nul%
-call :add
+if "%errorlevel%"=="0" (
+set "reg=%reg:"=%"
+echo Added - !reg!
+) else (
+set "reg=%reg:"=%"
+call :_color2 %Red% "Failed - !reg!"
+)
 exit /b
 
 :register_IDM
@@ -698,8 +705,6 @@ set "reg="%HKLM%" /v "AdvIntDriverEnabled2""
 
 reg add %reg% /t REG_DWORD /d "1" /f %nul%
 
-:add
-
 if "%errorlevel%"=="0" (
 set "reg=%reg:"=%"
 echo Added - !reg!
@@ -716,17 +721,17 @@ exit /b
     echo Blocking IDM servers to prevent registration pop-ups...
     set "hosts_file=%SystemRoot%\System32\drivers\etc\hosts"
 
-    findstr /c:"# Block IDM Activation" "%hosts_file%" >nul
+    findstr /c:"mirror3.internetdownloadmanager.com" "%hosts_file%" >nul
     if %errorlevel%==0 (
         echo IDM servers are already blocked in the hosts file.
-        goto :eof
+        exit /b 0
     )
 
     echo Backing up the hosts file to %hosts_file%.bak
     copy /Y "%hosts_file%" "%hosts_file%.bak" >nul
     if errorlevel 1 (
         call :_color %Red% "Failed to backup hosts file. Aborting server blocking."
-        goto :eof
+        exit /b 1
     )
 
     echo Adding entries to the hosts file...
@@ -745,13 +750,17 @@ exit /b
         echo 127.0.0.1 star.tonec.com
     ) >> "%hosts_file%"
 
-    findstr /c:"# Block IDM Activation" "%hosts_file%" >nul
+    findstr /c:"mirror3.internetdownloadmanager.com" "%hosts_file%" >nul
     if %errorlevel%==0 (
         call :_color %Green% "IDM servers blocked successfully."
+        echo Flushing DNS cache...
+        ipconfig /flushdns >nul 2>&1
+        exit /b 0
     ) else (
         call :_color %Red% "Failed to block IDM servers. Please check the script and permissions."
+        exit /b 1
     )
-goto :eof
+
 
 ::========================================================================================================================================
 
