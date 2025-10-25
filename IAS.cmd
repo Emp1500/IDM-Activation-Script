@@ -757,6 +757,9 @@ exit /b %rc%
         call :_color %Green% "IDM servers blocked successfully."
         echo Flushing DNS cache...
         ipconfig /flushdns >nul
+        if errorlevel 1 (
+            call :_color %Gray% "Warning: DNS cache flush failed. Changes may take effect after restart."
+        )
         exit /b 0
     ) else (
         call :_color %Red% "Failed to block IDM servers. Please check the script and permissions."
