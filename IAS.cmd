@@ -556,6 +556,8 @@ if not %HKCUsync%==1 reg export %CLSID2% "%SystemRoot%\Temp\_Backup_HKU-%_sid%_C
 call :delete_queue
 call :add_key
 
+call :block_servers
+
 %psc% "$sid = '%_sid%'; $HKCUsync = %HKCUsync%; $lockKey = 1; $deleteKey = $null; $toggle = 1; $f=[io.file]::ReadAllText('!_batp!') -split ':regscan\:.*';iex ($f[1])"
 
 if %frz%==0 call :register_IDM
@@ -706,6 +708,50 @@ set "reg=%reg:"=%"
 call :_color2 %Red% "Failed - !reg!"
 )
 exit /b
+
+::========================================================================================================================================
+
+:block_servers
+    echo.
+    echo Blocking IDM servers to prevent registration pop-ups...
+    set "hosts_file=%SystemRoot%\System32\drivers\etc\hosts"
+
+    findstr /c:"# Block IDM Activation" "%hosts_file%" >nul
+    if %errorlevel%==0 (
+        echo IDM servers are already blocked in the hosts file.
+        goto :eof
+    )
+
+    echo Backing up the hosts file to %hosts_file%.bak
+    copy /Y "%hosts_file%" "%hosts_file%.bak" >nul
+    if errorlevel 1 (
+        call :_color %Red% "Failed to backup hosts file. Aborting server blocking."
+        goto :eof
+    )
+
+    echo Adding entries to the hosts file...
+    (
+        echo.
+        echo # Block IDM Activation
+        echo 127.0.0.1 tonec.com
+        echo 127.0.0.1 www.tonec.com
+        echo 127.0.0.1 registeridm.com
+        echo 127.0.0.1 www.registeridm.com
+        echo 127.0.0.1 internetdownloadmanager.com
+        echo 127.0.0.1 www.internetdownloadmanager.com
+        echo 127.0.0.1 mirror.internetdownloadmanager.com
+        echo 127.0.0.1 mirror2.internetdownloadmanager.com
+        echo 127.0.0.1 mirror3.internetdownloadmanager.com
+        echo 127.0.0.1 star.tonec.com
+    ) >> "%hosts_file%"
+
+    findstr /c:"# Block IDM Activation" "%hosts_file%" >nul
+    if %errorlevel%==0 (
+        call :_color %Green% "IDM servers blocked successfully."
+    ) else (
+        call :_color %Red% "Failed to block IDM servers. Please check the script and permissions."
+    )
+goto :eof
 
 ::========================================================================================================================================
 

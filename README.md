@@ -12,7 +12,7 @@ I want to clarify that I am not the original author of this script. When I initi
 * Based on the transparent batch script
 
 # IAS Latest Release
-Last Release - v1.2 (12-Feb-2024)
+Last Release - v1.3 (25-Oct-2025)
 [GitHub](https://github.com/lstprjct/IDM-Activation-Script)
 
 # Download / How to use it?
@@ -75,6 +75,11 @@ After that follow the below steps to activate it.
 [![](https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/512px-Telegram_logo.svg.png)](https://t.me/ModByPiash)
 
 # Changelog
+## v1.3
+* Fixed a critical bug in the `:block_servers` section of the `IAS.cmd` script.
+* Corrected a typo that was preventing the script from completely blocking all of IDM's activation servers.
+* This fix improves the reliability of the script and prevents activation pop-ups.
+
 ## v1.2
 * Added back activation option with a randomized name, email, and key in registration details along with a warning that it’s not working for some users, the recommended option is to use Freeze trial.
 ## v1.1
