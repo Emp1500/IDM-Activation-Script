@@ -75,6 +75,11 @@ After that follow the below steps to activate it.
 [![](https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/512px-Telegram_logo.svg.png)](https://t.me/ModByPiash)
 
 # Changelog
+## v1.4
+* Fixed critical bug: `block_servers` was called before `download_files`, preventing the second registry key lock pass from running. Freeze Trial now fully locks all trial keys, eliminating random activation pop-ups.
+* Replaced IDM-specific download URLs in the freeze/activation flow with neutral GitHub raw URLs. The previous URLs pointed to `internetdownloadmanager.com`, which the script itself blocks — causing download failures on all subsequent runs.
+* Fixed undefined `$DownloadURL2` variable in `IAS.ps1`. If the primary download URL failed, the catch block also threw an error instead of falling back to the jsDelivr CDN mirror.
+
 ## v1.3
 * Fixed a critical bug in the `:block_servers` section of the `IAS.cmd` script.
 * Corrected a typo that was preventing the script from completely blocking all of IDM's activation servers.
