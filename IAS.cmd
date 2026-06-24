@@ -659,11 +659,11 @@ echo:
 set "file=%SystemRoot%\Temp\temp.png"
 set _fileexist=
 
-set link=https://www.internetdownloadmanager.com/images/idm_box_min.png
+set link=https://raw.githubusercontent.com/lstprjct/IDM-Activation-Script/main/IAS.cmd
 call :download
-set link=https://www.internetdownloadmanager.com/register/IDMlib/images/idman_logos.png
+set link=https://raw.githubusercontent.com/lstprjct/IDM-Activation-Script/main/IAS.ps1
 call :download
-set link=https://www.internetdownloadmanager.com/pictures/idm_about.png
+set link=https://raw.githubusercontent.com/lstprjct/IDM-Activation-Script/main/README.md
 call :download
 
 echo:
