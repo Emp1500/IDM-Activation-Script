@@ -75,6 +75,14 @@ After that follow the below steps to activate it.
 [![](https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/512px-Telegram_logo.svg.png)](https://t.me/ModByPiash)
 
 # Changelog
+## v1.5
+* Fixed download step: reverted to original IDM image URLs; added `unblock_servers` to temporarily lift hosts blocking before each download run so downloads succeed on repeated script runs.
+* Expanded `delete_queue` to also wipe `MData` and `regDT` registry values that IDM 6.43 uses to cross-check serial validity — without clearing these, IDM flags the serial as fake even when a correct value is written.
+* Rewrote `register_IDM` to generate a realistic first/last name pair and a gmail.com address instead of random numbers and a suspicious `@tonec.com` email.
+* Moved `register_IDM` call to after `block_servers` — IDM has no reachable server to phone home to when the serial is written to registry.
+* Expanded `block_servers` with four additional domains IDM 6.43 uses for serial validation: `secure.registeridm.com`, `update.internetdownloadmanager.com`, `spider.tonec.com`, `cdn.internetdownloadmanager.com`.
+* Added `validate_locks` subroutine that confirms at least one CLSID key was locked before proceeding — exits with an actionable warning if 0 keys were locked.
+
 ## v1.4
 * Fixed critical bug: `block_servers` was called before `download_files`, preventing the second registry key lock pass from running. Freeze Trial now fully locks all trial keys, eliminating random activation pop-ups.
 * Replaced IDM-specific download URLs in the freeze/activation flow with neutral GitHub raw URLs. The previous URLs pointed to `internetdownloadmanager.com`, which the script itself blocks — causing download failures on all subsequent runs.

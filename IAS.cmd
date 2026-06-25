@@ -1,4 +1,4 @@
-@set iasver=1.4
+@set iasver=1.5
 @setlocal DisableDelayedExpansion
 @echo off
 
@@ -446,6 +446,8 @@ for %%# in (
 ""HKCU\Software\DownloadManager" "/v" "LName""
 ""HKCU\Software\DownloadManager" "/v" "Email""
 ""HKCU\Software\DownloadManager" "/v" "Serial""
+""HKCU\Software\DownloadManager" "/v" "MData""
+""HKCU\Software\DownloadManager" "/v" "regDT""
 ""HKCU\Software\DownloadManager" "/v" "scansk""
 ""HKCU\Software\DownloadManager" "/v" "tvfrdt""
 ""HKCU\Software\DownloadManager" "/v" "radxcnt""
@@ -462,6 +464,8 @@ if not %HKCUsync%==1 for %%# in (
 ""HKU\%_sid%\Software\DownloadManager" "/v" "LName""
 ""HKU\%_sid%\Software\DownloadManager" "/v" "Email""
 ""HKU\%_sid%\Software\DownloadManager" "/v" "Serial""
+""HKU\%_sid%\Software\DownloadManager" "/v" "MData""
+""HKU\%_sid%\Software\DownloadManager" "/v" "regDT""
 ""HKU\%_sid%\Software\DownloadManager" "/v" "scansk""
 ""HKU\%_sid%\Software\DownloadManager" "/v" "tvfrdt""
 ""HKU\%_sid%\Software\DownloadManager" "/v" "radxcnt""
@@ -558,7 +562,11 @@ call :add_key
 
 %psc% "$sid = '%_sid%'; $HKCUsync = %HKCUsync%; $lockKey = 1; $deleteKey = $null; $toggle = 1; $f=[io.file]::ReadAllText('!_batp!') -split ':regscan\:.*';iex ($f[1])"
 
-if %frz%==0 call :register_IDM
+set _hosts_was_blocked=
+findstr /c:"# Block IDM Activation" "%SystemRoot%\System32\drivers\etc\hosts" >nul && (
+    set _hosts_was_blocked=1
+    call :unblock_servers
+)
 
 call :download_files
 if not defined _fileexist (
@@ -571,7 +579,11 @@ goto :done
 
 %psc% "$sid = '%_sid%'; $HKCUsync = %HKCUsync%; $lockKey = 1; $deleteKey = $null; $f=[io.file]::ReadAllText('!_batp!') -split ':regscan\:.*';iex ($f[1])"
 
+call :validate_locks
+
 call :block_servers
+
+if %frz%==0 call :register_IDM
 
 echo:
 echo %line%
@@ -631,11 +643,19 @@ echo:
 echo Applying registration details...
 echo:
 
-set /a fname = %random% %% 9999 + 1000
-set /a lname = %random% %% 9999 + 1000
-set email=%fname%.%lname%@tonec.com
+set fname=
+set lname=
+set email=
+set key=
 
-for /f "delims=" %%a in ('%psc% "$key = -join ((Get-Random -Count  20 -InputObject ([char[]]('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'))));$key = ($key.Substring(0,  5) + '-' + $key.Substring(5,  5) + '-' + $key.Substring(10,  5) + '-' + $key.Substring(15,  5) + $key.Substring(20));Write-Output $key" %nul6%') do (set key=%%a)
+for /f "delims=" %%a in ('%psc% "$fn=@('James','John','Robert','Michael','William','David','Richard','Joseph','Thomas','Charles','Mary','Patricia','Jennifer','Linda','Barbara'); $ln=@('Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis','Wilson','Taylor','Anderson','Thomas','Jackson','White','Harris'); $f=$fn|Get-Random; $l=$ln|Get-Random; $e=$f.ToLower()+'.'+$l.ToLower()+'@gmail.com'; $k=-join((Get-Random -Count 20 -InputObject ([char[]]('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')))); $k=$k.Substring(0,5)+'-'+$k.Substring(5,5)+'-'+$k.Substring(10,5)+'-'+$k.Substring(15,5); Write-Output ($f+'|'+$l+'|'+$e+'|'+$k)" %nul6%') do (
+for /f "tokens=1-4 delims=|" %%A in ("%%a") do (
+set "fname=%%A"
+set "lname=%%B"
+set "email=%%C"
+set "key=%%D"
+)
+)
 
 set "reg=HKCU\SOFTWARE\DownloadManager /v FName /t REG_SZ /d "%fname%"" & call :_rcont
 set "reg=HKCU\SOFTWARE\DownloadManager /v LName /t REG_SZ /d "%lname%"" & call :_rcont
@@ -659,11 +679,11 @@ echo:
 set "file=%SystemRoot%\Temp\temp.png"
 set _fileexist=
 
-set link=https://raw.githubusercontent.com/lstprjct/IDM-Activation-Script/main/IAS.cmd
+set link=https://www.internetdownloadmanager.com/images/idm_box_min.png
 call :download
-set link=https://raw.githubusercontent.com/lstprjct/IDM-Activation-Script/main/IAS.ps1
+set link=https://www.internetdownloadmanager.com/register/IDMlib/images/idman_logos.png
 call :download
-set link=https://raw.githubusercontent.com/lstprjct/IDM-Activation-Script/main/README.md
+set link=https://www.internetdownloadmanager.com/pictures/idm_about.png
 call :download
 
 echo:
@@ -709,6 +729,42 @@ call :_color2 %Red% "Failed - !reg!"
 )
 exit /b
 
+:unblock_servers
+    echo.
+    echo Temporarily removing IDM server block for downloads...
+    set "hosts_file=%SystemRoot%\System32\drivers\etc\hosts"
+    %psc% "$f='%hosts_file%'; $c=[io.file]::ReadAllText($f); $i=$c.IndexOf('# Block IDM Activation'); if($i -ge 0){[io.file]::WriteAllText($f,$c.Substring(0,$i).TrimEnd()+[char]13+[char]10)}" %nul%
+    echo IDM server block temporarily removed.
+goto :eof
+
+:validate_locks
+
+echo:
+echo Validating registry key locks...
+
+set _lockcount=0
+set "_vtemp=%SystemRoot%\Temp\_ias_vlc"
+%psc% "$p=if($env:PROCESSOR_ARCHITECTURE -eq 'x86'){'HKCU:\Software\Classes\CLSID'}else{'HKCU:\Software\Classes\WOW6432Node\CLSID'}; $e=@(); Get-ChildItem $p -ErrorAction SilentlyContinue -ErrorVariable +e | Out-Null; [io.file]::WriteAllText('!_vtemp!',($e.Count).ToString())" %nul2%
+
+if exist "!_vtemp!" (
+set /p _lockcount=<"!_vtemp!"
+del /f /q "!_vtemp!"
+)
+
+if %_lockcount% EQU 0 (
+echo:
+%eline%
+echo Warning: No CLSID keys were confirmed locked.
+echo The activation may not persist after IDM restarts.
+echo Re-run this script. If the problem persists, reinstall IDM cleanly first.
+echo:
+goto done
+)
+
+echo !_lockcount! CLSID key(s) confirmed locked.
+
+exit /b
+
 ::========================================================================================================================================
 
 :block_servers
@@ -743,6 +799,10 @@ exit /b
         echo 127.0.0.1 mirror2.internetdownloadmanager.com
         echo 127.0.0.1 mirror3.internetdownloadmanager.com
         echo 127.0.0.1 star.tonec.com
+        echo 127.0.0.1 secure.registeridm.com
+        echo 127.0.0.1 update.internetdownloadmanager.com
+        echo 127.0.0.1 spider.tonec.com
+        echo 127.0.0.1 cdn.internetdownloadmanager.com
     ) >> "%hosts_file%"
 
     findstr /c:"# Block IDM Activation" "%hosts_file%" >nul
