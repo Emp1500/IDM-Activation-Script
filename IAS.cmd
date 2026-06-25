@@ -657,6 +657,11 @@ set "key=%%D"
 )
 )
 
+if not defined key (
+call :_color %Red% "Warning: failed to generate registration details. Skipping registration."
+exit /b
+)
+
 set "reg=HKCU\SOFTWARE\DownloadManager /v FName /t REG_SZ /d "%fname%"" & call :_rcont
 set "reg=HKCU\SOFTWARE\DownloadManager /v LName /t REG_SZ /d "%lname%"" & call :_rcont
 set "reg=HKCU\SOFTWARE\DownloadManager /v Email /t REG_SZ /d "%email%"" & call :_rcont
@@ -733,8 +738,7 @@ exit /b
     echo.
     echo Temporarily removing IDM server block for downloads...
     set "hosts_file=%SystemRoot%\System32\drivers\etc\hosts"
-    %psc% "$f='%hosts_file%'; $c=[io.file]::ReadAllText($f); $i=$c.IndexOf('# Block IDM Activation'); if($i -ge 0){[io.file]::WriteAllText($f,$c.Substring(0,$i).TrimEnd()+[char]13+[char]10)}" %nul%
-    echo IDM server block temporarily removed.
+    %psc% "$f='%hosts_file%'; $c=[io.file]::ReadAllText($f); $i=$c.IndexOf('# Block IDM Activation'); if($i -ge 0){[io.file]::WriteAllText($f,$c.Substring(0,$i).TrimEnd()+[char]13+[char]10); Write-Output 'ok'}" %nul6% | findstr /i "ok" >nul && (echo IDM server block temporarily removed.) || (call :_color %Red% "Warning: failed to remove IDM server block from hosts file.")
 goto :eof
 
 :validate_locks
