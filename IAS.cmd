@@ -366,32 +366,34 @@ if %_freeze%==1 (set frz=1&goto :_activate)
 
 cls
 title  IDM Activation Script %iasver%
-if not defined terminal mode 75, 28
+if not defined terminal mode 75, 30
 
 echo:
 echo:
 call :_color2 %_White% "             " %_Green% "Create By Piash"
-echo:            ___________________________________________________ 
+echo:            ___________________________________________________
 echo:
 echo:               Telegram: @ModByPiash
 echo:               Github: https://github.com/lstprjct
-echo:            ___________________________________________________ 
-echo:                                                               
+echo:            ___________________________________________________
+echo:
 echo:               [1] Activate
 echo:               [2] Freeze Trial
 echo:               [3] Reset Activation / Trial
-echo:               _____________________________________________   
-echo:                                                               
+echo:               [6] Check IDM Status
+echo:               _____________________________________________
+echo:
 echo:               [4] Download IDM
 echo:               [5] Help
 echo:               [0] Exit
 echo:            ___________________________________________________
-echo:         
-call :_color2 %_White% "             " %_Green% "Enter a menu option in the Keyboard [1,2,3,4,5,0]"
-choice /C:123450 /N
+echo:
+call :_color2 %_White% "             " %_Green% "Enter a menu option in the Keyboard [1,2,3,4,5,6,0]"
+choice /C:1234560 /N
 set _erl=%errorlevel%
 
-if %_erl%==6 exit /b
+if %_erl%==7 exit /b
+if %_erl%==6 goto :_check_status
 if %_erl%==5 start https://github.com/lstprjct/IDM-Activation-Script & goto MainMenu
 if %_erl%==4 start https://www.internetdownloadmanager.com/download.html & goto MainMenu
 if %_erl%==3 goto _reset
@@ -628,6 +630,65 @@ echo Press any key to exit...
 pause %nul1%
 )
 exit /b
+
+::========================================================================================================================================
+
+:_check_status
+
+cls
+if not defined terminal mode 113, 30
+if not defined terminal %psc% "&%_buf%" %nul%
+
+echo:
+echo Checking IDM Status...
+echo:
+
+if not exist "%IDMan%" (
+call :_color %Red% "IDM [Internet Download Manager] is not Installed."
+echo You can download it from  https://www.internetdownloadmanager.com/download.html
+goto done
+)
+
+echo IDM Path: "%IDMan%"
+echo:
+
+for /f "tokens=2*" %%a in ('reg query "HKU\%_sid%\Software\DownloadManager" /v idmvers %nul6%') do (
+echo IDM Version: %%b
+echo:
+)
+
+set _status=
+
+for /f "tokens=2*" %%a in ('reg query "HKU\%_sid%\Software\DownloadManager" /v Serial %nul6%') do (
+call :_color %Green% "Status: Activated"
+echo Serial: %%b
+set _status=1
+echo:
+)
+
+if not defined _status (
+for /f "tokens=2*" %%a in ('reg query "HKU\%_sid%\Software\DownloadManager" /v tvfrdt %nul6%') do (
+call :_color %_Yellow% "Status: Trial Frozen"
+set _status=1
+echo:
+)
+)
+
+if not defined _status (
+call :_color %Red% "Status: Not activated / trial not frozen."
+echo:
+)
+
+findstr /c:"# Block IDM Activation" "%SystemRoot%\System32\drivers\etc\hosts" >nul && (
+echo Server block: Active
+) || (
+echo Server block: Inactive
+)
+echo:
+
+echo %line%
+
+goto done
 
 ::========================================================================================================================================
 
